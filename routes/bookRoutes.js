@@ -2,6 +2,7 @@ const express = require('express');
 const BookSchema = require('../models/bookSchema');
 const ReviewSchema = require("../models/reviewSchema")
 const authenticate = require('../middleware/authMiddleware');
+const bookSchema = require('../models/bookSchema');
 const bookRouter = express.Router();
 
 
@@ -22,11 +23,22 @@ bookRouter.post('/', authenticate, async (req, res) => {
 });
 
 // Get all books in the user's collection
+
 bookRouter.get('/', authenticate, async (req, res) => {
     try {
-        const books = await BookSchema.find({ userId: req.userId });
+        const books = await BookSchema.find({}).populate({
+            path: 'reviews', // Populate the reviews array
+            populate: {
+                path: 'userId', select: 'username email',
+
+            }
+            ,
+        });// Populate user details for each review
+        console.log(books);
         return res.json(books);
     } catch (error) {
+        console.log(error);
+
         return res.status(500).json({ message: 'Error retrieving books' });
     }
 });
@@ -56,18 +68,6 @@ bookRouter.delete('/:id', authenticate, async (req, res) => {
     }
 });
 
-bookRouter.get('/:bookId/review', async (req, res) => {
-    try {
-        const bookId = req.params.bookId
-
-        const reviews = await ReviewSchema.find({ bookId })
-            .populate('userId', 'username email');  // Populate user info
-        return res.status(200).json(reviews);
-    } catch (error) {
-        console.log(error)
-        return res.status(500).json({ message: 'Error fetching reviews', error });
-    }
-});
 
 
 module.exports = bookRouter;

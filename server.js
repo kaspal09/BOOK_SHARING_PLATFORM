@@ -29,7 +29,7 @@ mongoose
 //Routes
 
 
-app.listen(process.env.PORT, () => {
+app.listen(5000, () => {
     console.log(`The server is running on port 5000`);
 
 });

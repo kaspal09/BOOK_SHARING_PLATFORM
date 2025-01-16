@@ -1,5 +1,5 @@
 const express = require('express');
-const reviewSchema = require('../models/reviewSchema');
+const ReviewSchema = require('../models/reviewSchema');
 const BookSchema = require('../models/bookSchema');
 const authenticate = require('../middleware/authMiddleware');
 const reviewRouter = express.Router();
@@ -11,16 +11,30 @@ reviewRouter.post('/:id/', authenticate, async (req, res) => {
         const { rating, review } = req.body;
         const bookId = req.params.id;  // Extract the bookId from the route parameters
         const userId = req.user._id;   // User is attached from the authenticate middleware
+        //check
+        const bookExists = await BookSchema.findById(bookId);
+        if (!bookExists) {
+            return res.status(404).json({ message: 'Book not found' });
+        }
+
 
         // Create and save the review
-        const newReview = new reviewSchema({
+        const newReview = new ReviewSchema({
             bookId,      // Attach the bookId
             userId,
             rating,
             review,
         });
 
+        //to save 
+
+        bookExists.reviews.push(newReview);
+
         await newReview.save();
+        await bookExists.save();
+
+
+
         return res.status(201).json(newReview);
     } catch (error) {
         console.log(error);
@@ -29,6 +43,18 @@ reviewRouter.post('/:id/', authenticate, async (req, res) => {
 });
 
 // GET /api/books/:id/eviews - Get all reviews for a specific book
+reviewRouter.get('/:bookId/review', async (req, res) => {
+    try {
+        const bookId = req.params.bookId
+
+        const reviews = await ReviewSchema.find({ bookId })
+            .populate('userId', 'name email');  // Populate user info
+        return res.status(200).json(reviews);
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({ message: 'Error fetching reviews', error });
+    }
+});
 
 
 // PUT /api/books/:id/review - Update a review for a specific book
